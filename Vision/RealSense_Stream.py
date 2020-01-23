@@ -21,7 +21,7 @@ try:
         ir_frame = rs2.video_frame(frames.get_infrared_frame())
         depth_frame = rs2.depth_frame(frames.get_depth_frame())
         color_frame = rs2.video_frame(frames.get_color_frame())
-        if not ir_frame or not depth_frame or not color_frame:
+        if not ir_frame or not depth_frame or not color_frame:      #TODO: check if this is actually useful
             continue
 
         # Convert images to numpy arrays
@@ -31,10 +31,11 @@ try:
 
         # Apply colormap on depth image (image must be converted to 8-bit per pixel first for compatibility, may be left alone for analysis)
         depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.03), cv2.COLORMAP_JET)
-        # ir_color = cv2.applyColorMap(ir_image, cv2.COLORMAP_BONE)
 
-        # Stack images horizontally
-        # images = np.hstack((ir_greyscale, depth_colormap))
+        # Threshold and greyscale operations
+        # greyscale = cv2.cvtColor(color_image, cv2.COLOR_BGR2GRAY)
+        # ret, CThresh = cv2.threshold(greyscale, 225, 255, cv2.THRESH_BINARY_INV)
+        # ret, IRThresh = cv2.threshold(ir_image, 240, 255, cv2.THRESH_BINARY_INV)
 
         #get frame size
         width = depth_frame.get_height()
@@ -44,6 +45,7 @@ try:
         XCenter = int(width/2)
         YCenter = int(height/2)
 
+        # Drawing lines and text for distance
         cv2.line(depth_colormap, (XCenter, 0), (XCenter, height), (255, 255, 255), 1)
         cv2.line(depth_colormap, (0, YCenter), (width, YCenter), (255, 255, 255), 1)
 
@@ -53,9 +55,11 @@ try:
         # Show images
         # cv2.namedWindow('RealSense', cv2.WINDOW_AUTOSIZE)
         # cv2.imshow('RealSense', images)
-        cv2.imshow('Color', color_image)
+        # cv2.imshow('Color', color_image)
+        # cv2.imshow('Greyscale', CThresh)
         cv2.imshow('Depth', depth_colormap)
-        cv2.imshow('IR', ir_image)
+        # cv2.imshow('IR', ir_image)
+        # cv2.imshow('IRTthresh', IRThresh)
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
