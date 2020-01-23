@@ -1,5 +1,4 @@
 import cv2
-import numpy as np
 
 img1 = cv2.imread('3D-Matplotlib.png', cv2.IMREAD_COLOR)
 img2 = cv2.imread('mainlogo.png', cv2.IMREAD_COLOR)
@@ -8,7 +7,7 @@ img2 = cv2.imread('mainlogo.png', cv2.IMREAD_COLOR)
 # add = cv2.add(img1, img2)
 # weighted = cv2.addWeighted(img1, 0.6, img2, 0.4, 0)
 
-#cv2.imshow('add', weighted)
+# cv2.imshow('add', weighted)
 
 rows, cols, channels = img2.shape
 roi = img1[0:rows, 0:cols]
@@ -24,7 +23,6 @@ dst = cv2.add(img1_bg, img2_fg)
 img1[0:rows, 0:cols] = dst
 
 cv2.imshow('res', img1)
-
 
 cv2.waitKey(0)
 cv2.destroyAllWindows()
