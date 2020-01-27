@@ -22,6 +22,5 @@ while True:
     if k == 27:
         break
 
-    cv2.destroyAllWindows()
-    cap.release()
-    pipe.stop
+cv2.destroyAllWindows()
+cap.release()
