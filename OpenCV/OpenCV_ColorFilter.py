@@ -2,12 +2,23 @@ import pyrealsense2 as rs2
 import cv2
 import numpy as np
 
+width = 640
+height = 480
+
 pipe = rs2.pipeline()
 config = rs2.config()
-config.enable_stream(rs2.stream.color, 640, 480, rs2.format.bgr8, 30)
+config.enable_stream(rs2.stream.color, width, height, rs2.format.bgr8, 30)
 profile = pipe.start(config)
 s = profile.get_device().query_sensors()[1]
-s.set_option(rs2.option.exposure, 163)
+s.set_option(rs2.option.brightness, 0)
+s.set_option(rs2.option.contrast, 100)
+s.set_option(rs2.option.exposure, 45)
+s.set_option(rs2.option.gain, 75)
+s.set_option(rs2.option.gamma, 100)
+s.set_option(rs2.option.hue, 0)
+s.set_option(rs2.option.saturation, 50)
+s.set_option(rs2.option.sharpness, 0)
+s.set_option(rs2.option.white_balance, 2800)
 
 while True:
     frames = rs2.composite_frame(pipe.wait_for_frames())
@@ -19,24 +30,58 @@ while True:
 
     hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 
-    lower_color = np.array([65, 0, 240])
-    upper_color = np.array([95, 70, 255])
+    lower_color = np.array([70, 80, 255])
+    upper_color = np.array([95, 180, 255])
 
     kernel = np.ones((5, 5), np.uint8)
     mask = cv2.inRange(hsv, lower_color, upper_color)
     morphMask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
     res = cv2.bitwise_and(img, img, mask=morphMask)
-    median = cv2.medianBlur(res, 3)
+    median = cv2.medianBlur(morphMask, 3)
+    mask_edges = cv2.Canny(mask, 100, 200)
     med_edges = cv2.Canny(median, 100, 200)
     res_edges = cv2.Canny(res, 100, 200)
 
-    # cv2.imshow('OG', img)
-    # cv2.imshow('Mask', mask)
-    # cv2.imshow('MorphMask', morphMask)
-    # cv2.imshow('Filtered', res)
-    # cv2.imshow('median', median)
+    lineImg = np.zeros((height, width, 3), np.uint8)
+
+    lines = cv2.HoughLines(mask_edges, 1, np.pi/180, 30)
+
+    if lines is not None:
+        for line in lines:
+            rho, theta = line[0]
+            a = np.cos(theta)
+            b = np.sin(theta)
+            x0 = a * rho
+            y0 = b * rho
+            # x1 stores the rounded off value of (r * cos(theta) - 1000 * sin(theta))
+            x1 = int(x0 + 1000 * (-b))
+            # y1 stores the rounded off value of (r * sin(theta)+ 1000 * cos(theta))
+            y1 = int(y0 + 1000 * (a))
+            # x2 stores the rounded off value of (r * cos(theta)+ 1000 * sin(theta))
+            x2 = int(x0 - 1000 * (-b))
+            # y2 stores the rounded off value of (r * sin(theta)- 1000 * cos(theta))
+            y2 = int(y0 - 1000 * (a))
+            cv2.line(lineImg, (x1, y1), (x2, y2), (0, 0, 255), 2)
+            cv2.imshow('Lines', lineImg)
+
+#    lines = cv2.HoughLinesP(res_edges, 1, np.pi/180, 30, minLineLength=10)
+#    
+#    if lines is not None:
+#        for line in lines:
+#            X1, Y1, X2, Y2 = line[0]
+#            cv2.line(lineImg, (X1, Y1), (X2, Y2), (0, 255, 0), 1)
+#
+#            cv2.imshow('Lines', lineImg)
+
+    cv2.imshow('OG', img)
+    #cv2.imshow('Mask', mask)
+    #cv2.imshow('MorphMask', morphMask)
+    #cv2.imshow('Filtered', res)
+    #cv2.imshow('median', median)
     cv2.imshow('med', med_edges)
-    cv2.imshow('res', res_edges)
+    #cv2.imshow('res', res_edges)
+    cv2.imshow('Mask Edges', mask_edges)
+
 
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
