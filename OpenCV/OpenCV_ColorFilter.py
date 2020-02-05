@@ -68,7 +68,7 @@ while True:
     #        cv2.line(lineImg, (x1, y1), (x2, y2), (0, 0, 255), 2)
     #        cv2.imshow('Lines', lineImg)
 
-    lines = cv2.HoughLinesP(res_edges, 1, .5 * to_radians, 30, minLineLength=5)
+    lines = cv2.HoughLinesP(res_edges, 1, .5 * to_radians, 30, maxLineGap=20)
     
     if lines is not None:
         for line in lines:
