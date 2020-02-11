@@ -8,7 +8,6 @@ config = rs2.config()
 config.enable_stream(rs2.stream.infrared, 640, 480, rs2.format.y8, 30)  # Start Color Stream
 config.enable_stream(rs2.stream.depth, 640, 480, rs2.format.z16, 30)    # Start Depth Stream
 config.enable_stream(rs2.stream.color, 640, 480, rs2.format.bgr8, 30)   # Start Color Stream
-# print(rs2.options.get_option(rs2.option))
 
 # Start Streaming
 pipe.start(config)
