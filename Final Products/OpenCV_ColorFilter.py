@@ -1,3 +1,12 @@
+# Contains most of the vision processing, though the most complete is under Offline_Filter
+# Likely to become the final product file for vision processing
+# The exposure options are likely needed to be adjusted per competition
+# They are currently tuned to the testing area
+# Tuning for the RealSense camera can be done easily through the ReaslSense Viewer app in a GUI
+# One thing I do still need to figure out is assigning the camera to a specific IO port number
+# Testing on my laptop, it is only visible when using one port
+
+
 import pyrealsense2 as rs2
 import cv2
 import numpy as np
