@@ -5,7 +5,7 @@ import numpy as np
 width = 640
 height = 480
 
-pipe = rs2.pipeline()
+pipe = rs2.pipeline()                           # The camera's API sucks, but at least I can guarantee setings
 config = rs2.config()
 config.enable_stream(rs2.stream.color, width, height, rs2.format.bgr8, 30)
 profile = pipe.start(config)

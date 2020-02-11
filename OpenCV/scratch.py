@@ -1,5 +1,8 @@
 import numpy as np
 
+# Guess who knows how to iterate through a list?
+# It felt much more daunting than it actually was, don't judge...
+
 def equal(x1, y1, x2, y2):
     variance = 5
     xmax = x1 + variance
@@ -44,11 +47,3 @@ for i in range(numLines):
             intersects.append([x2, y2])
 
     print(intersects)
-
-    '''
-    First value of first points
-    first value of second points
-    is equal?
-    y: check 2nd values
-    n: move on
-    '''
