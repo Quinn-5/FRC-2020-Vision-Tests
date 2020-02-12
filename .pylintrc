@@ -139,7 +139,6 @@ disable=print-statement,
         deprecated-sys-function,
         exception-escape,
         comprehension-escape,
-        invalid-name,
         missing-module-docstring,
         missing-final-newline
 

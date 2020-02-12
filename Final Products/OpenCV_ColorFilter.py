@@ -6,7 +6,6 @@
 # One thing I do still need to figure out is assigning the camera to a specific IO port number
 # Testing on my laptop, it is only visible when using one port
 
-
 import pyrealsense2 as rs2
 import cv2
 import numpy as np
@@ -14,9 +13,10 @@ import numpy as np
 width = 640
 height = 480
 
-pipe = rs2.pipeline()                           # The camera's API sucks, but at least I can guarantee setings
+pipe = rs2.pipeline()               # The camera's API sucks, but at least I can guarantee setings
 config = rs2.config()
 config.enable_stream(rs2.stream.color, width, height, rs2.format.bgr8, 30)
+config.enable_stream(rs2.stream.depth, width, height, rs2.format.z16, 30)
 profile = pipe.start(config)
 s = profile.get_device().query_sensors()[1]
 s.set_option(rs2.option.brightness, 0)
