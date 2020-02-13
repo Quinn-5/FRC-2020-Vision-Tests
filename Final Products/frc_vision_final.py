@@ -10,6 +10,8 @@ from math import degrees, radians
 import pyrealsense2 as rs2
 import cv2
 import numpy as np
+import time
+from networktables import NetworkTables
 
 # Takes in slopes x and y, tests if they are equal to each other or any previously verified line
 def unequal(new, old_list):
@@ -23,13 +25,20 @@ def unequal(new, old_list):
             return False
     return True
 
+NetworkTables.initialize(server='roborio-166-frc.local')
+
+sd = NetworkTables.getTable('SmartDashboard')
+# sd.putNumber('someNumber', 1234)
+# otherNumber = sd.getNumber('otherNumber')
+
 WIDTH = 640
 HEIGHT = 480
+POINT_SAMPLES = 5
 
 pipe = rs2.pipeline()               # The camera's API sucks, but at least I can guarantee setings
 config = rs2.config()
-config.enable_stream(rs2.stream.color, WIDTH, HEIGHT, rs2.format.bgr8, 30)
-config.enable_stream(rs2.stream.depth, WIDTH, HEIGHT, rs2.format.z16, 30)
+config.enable_stream(rs2.stream.color, WIDTH, HEIGHT, rs2.format.bgr8, 60)
+config.enable_stream(rs2.stream.depth, WIDTH, HEIGHT, rs2.format.z16, 60)
 profile = pipe.start(config)
 s = profile.get_device().query_sensors()[1]
 s.set_option(rs2.option.brightness, 0)
@@ -42,7 +51,15 @@ s.set_option(rs2.option.saturation, 50)
 s.set_option(rs2.option.sharpness, 0)
 s.set_option(rs2.option.white_balance, 2800)
 
+X_VALS = []
+Y_VALS = []
+
+pointer = 0
+
+
 while True:
+    start_time = time.time()
+
     frames = rs2.composite_frame(pipe.wait_for_frames())
     frame = rs2.video_frame(frames.get_color_frame())
     if not frame:
@@ -70,10 +87,11 @@ while True:
     MED_EDGES = cv2.Canny(MEDIAN, 50, 150)
 
     # Empty image for drawing lines (testing)
+    FILTERED_LINE_IMG = np.zeros((HEIGHT, WIDTH, 3), np.uint8)
     LINE_IMG = np.zeros((HEIGHT, WIDTH, 3), np.uint8)
 
     # Find lines in selected image
-    LINES = cv2.HoughLinesP(MED_EDGES, 1, radians(.5), 15, maxLineGap=20)
+    LINES = cv2.HoughLinesP(MASK_EDGES, 1, radians(.5), 25, maxLineGap=25)
 
     if LINES is not None:
         NUM_LINES = len(LINES)
@@ -86,24 +104,41 @@ while True:
             if FILTERED_LINES:
                 if (new_slope < -40 or new_slope > 40) and unequal(new_slope, FILTERED_LINES):
                     FILTERED_LINES.append(NEW_LINE)
-                    cv2.line(LINE_IMG, (x1, y1), (x2, y2), (0, 255, 0), 1)
+                    cv2.line(FILTERED_LINE_IMG, (x1, y1), (x2, y2), (0, 255, 0), 1)
                     X_TOTAL += x1 + x2
                     Y_TOTAL += y1 + y2
             else:
                 if new_slope < -40 or new_slope > 40:
                     FILTERED_LINES.append(NEW_LINE)
-                    cv2.line(LINE_IMG, (x1, y1), (x2, y2), (0, 255, 0), 1)
+                    cv2.line(FILTERED_LINE_IMG, (x1, y1), (x2, y2), (0, 255, 0), 1)
                     X_TOTAL += x1 + x2
                     Y_TOTAL += y1 + y2
 
         NUM_LINES = len(FILTERED_LINES)
         if FILTERED_LINES:
-            X_CENTER = int(X_TOTAL/(2*NUM_LINES))
-            Y_CENTER = int(Y_TOTAL/(2*NUM_LINES))
-            cv2.circle(LINE_IMG, [X_CENTER, Y_CENTER], 5, [255, 255, 255], -1)
-            # LINE_IMG[int(Y_CENTER), int(X_CENTER)] = [255, 255, 255]
+            X_AVG = 0
+            Y_AVG = 0
+            if len(X_VALS) == POINT_SAMPLES:
+                X_VALS[pointer] = X_TOTAL/(2*NUM_LINES)
+                Y_VALS[pointer] = Y_TOTAL/(2*NUM_LINES)
+                for i in range(len(X_VALS)):
+                    X_AVG += X_VALS[i]
+                    Y_AVG += Y_VALS[i]
+                X_AVG /= POINT_SAMPLES
+                Y_AVG /= POINT_SAMPLES
 
-    cv2.imshow("lines", LINE_IMG)
+                cv2.circle(FILTERED_LINE_IMG, (int(X_AVG), int(Y_AVG)), 5, [255, 255, 255], -1)
+            else:
+                X_VALS.append(int(X_TOTAL/(2*NUM_LINES)))
+                Y_VALS.append(int(Y_TOTAL/(2*NUM_LINES)))
+
+        for LINE in LINES:
+            x1, y1, x2, y2 = LINE[0]
+            cv2.line(LINE_IMG, (x1, y1), (x2, y2), (0, 255, 0), 1)
+    end_time = time.time()
+
+    cv2.imshow("og lines", LINE_IMG)
+    cv2.imshow("lines", FILTERED_LINE_IMG)
     cv2.imshow('OG', IMG)                   # Open the gallery of all my filtered works
     cv2.imshow('Mask', MASK)
     cv2.imshow('blur', BLUR_EDGES)
@@ -111,9 +146,16 @@ while True:
     cv2.imshow('med', MED_EDGES)
     cv2.imshow('Mask Edges', MASK_EDGES)
 
+    if pointer == POINT_SAMPLES - 1:
+        pointer = 0
+    else:
+        pointer += 1
+
 
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
+    end_time = time.time()
+    print(end_time - start_time)
 
 cv2.destroyAllWindows()
 pipe.stop()
